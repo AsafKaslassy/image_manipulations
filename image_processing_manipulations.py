@@ -1,43 +1,61 @@
 import os
 import cv2
 import numpy as np
+import configparser
 
 
 class Images(object):
 
     def __init__(self):
-        self.imageNames = os.listdir(input_path)
+        self.input_path = r"C:\Users\Assaf\PycharmProjects\untitled\input"
+        self.output_path = r"C:\Users\Assaf\PycharmProjects\untitled\output"
+        self.imageNames = os.listdir(self.input_path)
         self.imageList = []
+        self.new_width  = 1080
+        self.new_height = 1920
+        self.valid_images = \
+        [".jpg" ,  ".tiff", ".jpeg", ".tif"  ,".bmp" ]
+
+
+    def prep_folders(self):
+
+        if not os.path.exists('output/Gray'):
+            os.makedirs('output/Gray')
+        if not os.path.exists('output\Resized'):
+            os.makedirs('output\Resized')
+        if not os.path.exists('output\lines'):
+            os.makedirs('output\lines')
+        if not os.path.exists('output\edges'):
+            os.makedirs('output\edges')
+        if not os.path.exists('output\edges\Sobel_edges'):
+            os.makedirs('output\edges\Sobel_edges')
+        if not os.path.exists('output\edges\Canny_edges'):
+            os.makedirs('output\edges\Canny_edges')
+        if not os.path.exists('output\circles'):
+            os.makedirs('output\circles')
 
 
     def load_images(self):
 
-        valid_images = [".jpg", ".tiff", ".jpeg", ".tif", ".bmp"]
         for idx, imageName  in enumerate(self.imageNames):
             extension = os.path.splitext(imageName)[1]
-            if extension.lower() not in valid_images:
+            if extension.lower() not in self.valid_images:
                 continue
-            print ("\nreading " + (os.path.join(input_path, imageName)))
-            self.imageList.append(cv2.imread(os.path.join(input_path, imageName)))
+            print ("\nreading " + (os.path.join(self.input_path, imageName)))
+            self.imageList.append(cv2.imread(os.path.join(self.input_path, imageName)))
             filename = os.path.splitext(imageName)[0]
             self.imageList[idx] = cv2.cvtColor(self.imageList[idx], cv2.COLOR_BGR2GRAY)
-            if not os.path.exists('Gray'):
-                os.makedirs('output/Gray', exist_ok=True)
-            gray_golder_path = os.path.join(str(output_path)+'\Gray', filename + extension)
+            gray_golder_path = os.path.join(str(self.output_path)+'\Gray', filename + extension)
             cv2.imwrite(gray_golder_path, self.imageList[idx])
-            print ("Saving ->" + gray_golder_path)
 
 
     def resize_images(self):
 
-        new_width  = 640
-        new_height = 480
-
         for idx, image in enumerate(self.imageList):
-            resized = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_AREA)
-            if not os.path.exists('output\Resized'):
-                os.makedirs('output\Resized')
-            cv2.imwrite(os.path.join(str(output_path)+'\Resized', "resized_" + self.imageNames[idx]), resized)
+            resized = cv2.resize(image, (self.new_width, self.new_height), interpolation=cv2.INTER_AREA)
+            print ("\n resizing " + os.path.join(str(self.output_path)+'\Resized', "resized_" + self.imageNames[idx]))
+            cv2.imwrite(os.path.join(str(self.output_path)+'\Resized', "resized_" + self.imageNames[idx]), resized)
+
 
     def find_lines(self):
         """
@@ -45,81 +63,104 @@ class Images(object):
         add docstrings to functions
         :return:
         """
-        if not os.path.exists('output\lines'):
-            os.makedirs('output\lines')
-            os.makedirs('output\edges')
+
         for idx, image in enumerate(self.imageList):
             # gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-            edges = cv2.Canny(image,20,250,apertureSize = 3)
-            cv2.imwrite(os.path.join(str(output_path)+'\edges', "edges" + self.imageNames[idx]), edges)
+            Canny_edges = cv2.Canny(image,5,250,apertureSize = 3)
+            Sobel_edges = cv2.Sobel(image, cv2.CV_16S, 0, 1, ksize=3, scale=2, delta=1, borderType=cv2.BORDER_DEFAULT)
+            cv2.imwrite(os.path.join(str(self.output_path)+'\edges\Sobel_edges', "Sobel_" + self.imageNames[idx]), Sobel_edges)
+            cv2.imwrite(os.path.join(str(self.output_path)+'\edges\Canny_edges', "Canny_" + self.imageNames[idx]), Canny_edges)
+            print ("\n   finding edges  " + os.path.join(str(self.output_path), "Edges_" + self.imageNames[idx]))
 
-            minLineLength = 999
-            maxLineGap =  10
-            lines = cv2.HoughLinesP(edges,1,np.pi/180,150,minLineLength,maxLineGap)
+            ## DrawLines on edges
+            # minLineLength = 9999
+            # maxLineGap =  100
+            # lines = cv2.HoughLinesP(edges,1,np.pi/180,150,minLineLength,maxLineGap)
+            # for i in range(len(lines)):
+            #     for x1,y1,x2,y2 in lines[i]:
+            #         cv2.line(edges,(x1,y1),(x2,y2),(255,0,10),3)
+            # cv2.imwrite(os.path.join(str(output_path)+'\lines', "lines" + self.imageNames[idx]), lines)
 
-            for i in range(len(lines)):
-                for x1,y1,x2,y2 in lines[i]:
-                    cv2.line(image,(x1,y1),(x2,y2),(255,0,10),3)
 
-            cv2.imwrite(os.path.join(str(output_path)+'\lines', "lines" + self.imageNames[idx]), lines)
+    # def sift(self):
+    #     """
+    #     """
+    #     for idx, image in enumerate(self.imageList):
+    #         # self.imageList[idx] = cv2.cvtColor(self.imageList[idx], cv2.COLOR_BGR2GRAY)
+    #         sift = cv2.xfeatures2d.SIFT_create()
+    #         kp = sift.detect(image,None)
+    #
+    #         img=cv2.drawKeypoints(image,kp)
+    #
+    #         cv2.imwrite('sift_keypoints.jpg',img)
 
+
+
+        ## Load the configuration file
+
+        # with open("config.ini") as f:
+        #     sample_config = f.read()
+        # config = ConfigParser.RawConfigParser(allow_no_value=True)
+        # config.readfp(io.BytesIO(sample_config))
+        #
+        # # List all contents
+        # print("List all contents")
+        # for section in config.sections():
+        #     print("Section: %s" % section)
+        #     for options in config.options(section):
+        #         print("x %s:::%s:::%s" % (options,
+        #                                   config.get(section, options),
+        #                                   str(type(options))))
+        #
+        # # Print some contents
+        # print("\nPrint some contents")
+        # print(config.get('other', 'use_anonymous'))  # Just get the value
+        # print(config.getboolean('other', 'use_anonymous'))  # You know the datatype?
+
+
+            # cv2.imwrite(os.path.join(str(output_path)+'\circles', "Circles_" + self.imageNames[idx]), cimg)
+
+
+    # def circle_detection(self):
+    #     """
+    #     """
+    #     for idx, image in enumerate(self.imageList):
+    #         image = cv2.medianBlur(image,21)
+    #         print ("blurring image", image)
+    #         cimg = cv2.cvtColor(image,cv2.COLOR_GRAY2BGR)
+    #
+    #         circles = cv2.HoughCircles(self.imageList[idx],cv2.HOUGH_GRADIENT,1,20,
+    #                                     param1=160,param2=40,minRadius=0,maxRadius=0)
+    #         # circles = np.uint16(np.around(circles))
+    #         for i in circles[0,:]:
+    #             print (i)
+    #             # draw the outer circle
+    #             cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
+    #             # draw the center of the circle
+    #             cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
+    #
+    #         cv2.imwrite(os.path.join(str(output_path)+'\circles', "Circles_" + self.imageNames[idx]), cimg)
 
 
 if __name__ == '__main__':
 
     print('\n started...\n')
 
-    input_path = r"C:\Users\Assaf\PycharmProjects\untitled\input"
-    output_path = r"C:\Users\Assaf\PycharmProjects\untitled\output"
     ImageClass = Images()
 
+    ImageClass.prep_folders()
     ImageClass.load_images()
     ImageClass.resize_images()
     ImageClass.find_lines()
+    # ImageClass.sift()
 
     print('\n finished...\n')
 
-#     pass
-#
-# def find_edges(self,):
-#
-#      # edges = cv2.Canny(gray,20,250,apertureSize = 3)
-#
-#     pass
-#
-# def feature_matching():
-#     pass
-#
-#
-#
-#
-#
-#
-# def circle_detection():
-#     """
-#     :return:
-#     """
-#     img = cv2.imread(input_path,0)
-#     img = cv2.medianBlur(img,5)
-#     cimg = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
-#
-#     circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,1,20,
-#                                 param1=160,param2=40,minRadius=0,maxRadius=0)
-#
-#     circles = np.uint16(np.around(circles))
-#     if not os.path.exists('output'):
-#         os.makedirs('output')
-#
-#     for i in circles[0,:]:
-#         # draw the outer circle
-#         cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
-#         # draw the center of the circle
-#         cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
-#
-#     cv2.imwrite(output_path + '\circles.jpg' ,cimg)
 
-# def save_outputs():
-#
-#     pass
-#
+
+# TODO:
+# read from config.ini
+# export info to XMl and Json
+# run with a gui
+# compile
 
