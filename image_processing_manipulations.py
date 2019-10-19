@@ -1,30 +1,14 @@
+import os
 import cv2
 import numpy as np
-import os , os.path
-from PIL import Image
+
 
 class Images(object):
 
-    def __init__(self, input_path, output_path):
+    def __init__(self):
         self.imageNames = os.listdir(input_path)
+        self.imageList = []
 
-        self.imageList = list()
-        # for image in self.imageArr :
-        #     img = cv2.imread(os.path.join(input_path, image))
-        #     extension = os.path.splitext(image)[1]
-        #     # if extension.lower() not in self.valid_images:
-        #         continue
-        #     print ("\nreading " + (os.path.join(input_path, image)))
-        #     filename = os.path.splitext(image)[0]
-        #     # print (os.path.splitext(image)[0])
-        #     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        #     cv2.imwrite(str(output_path) + filename + extension,gray)
-        #     print ("Saving ->" + (os.path.join(output_path, image)))
-        #
-        # self.filename = filename
-        # self.new_width = new_width
-        # self.new_height = new_height
-        # self.input_path = input_path
 
     def load_images(self):
 
@@ -36,10 +20,13 @@ class Images(object):
             print ("\nreading " + (os.path.join(input_path, imageName)))
             self.imageList.append(cv2.imread(os.path.join(input_path, imageName)))
             filename = os.path.splitext(imageName)[0]
-            # print (os.path.splitext(image)[0])
             self.imageList[idx] = cv2.cvtColor(self.imageList[idx], cv2.COLOR_BGR2GRAY)
-            cv2.imwrite(os.path.join(str(output_path), filename + extension), self.imageList[idx])
-            print ("Saving ->" + (os.path.join(output_path, imageName)))
+            if not os.path.exists('Gray'):
+                os.makedirs('output/Gray', exist_ok=True)
+            gray_golder_path = os.path.join(str(output_path)+'\Gray', filename + extension)
+            cv2.imwrite(gray_golder_path, self.imageList[idx])
+            print ("Saving ->" + gray_golder_path)
+
 
     def resize_images(self):
 
@@ -48,21 +35,47 @@ class Images(object):
 
         for idx, image in enumerate(self.imageList):
             resized = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_AREA)
-            
-            #resized = Image.resize((new_width, new_height), Image.ANTIALIAS)
-            cv2.imwrite(os.path.join(str(output_path), "Resized_" + self.imageNames[idx]), resized)
+            if not os.path.exists('output\Resized'):
+                os.makedirs('output\Resized')
+            cv2.imwrite(os.path.join(str(output_path)+'\Resized', "resized_" + self.imageNames[idx]), resized)
+
+    def find_lines(self):
+        """
+        TODO:
+        add docstrings to functions
+        :return:
+        """
+        if not os.path.exists('output\lines'):
+            os.makedirs('output\lines')
+            os.makedirs('output\edges')
+        for idx, image in enumerate(self.imageList):
+            # gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+            edges = cv2.Canny(image,20,250,apertureSize = 3)
+            cv2.imwrite(os.path.join(str(output_path)+'\edges', "edges" + self.imageNames[idx]), edges)
+
+            minLineLength = 999
+            maxLineGap =  10
+            lines = cv2.HoughLinesP(edges,1,np.pi/180,150,minLineLength,maxLineGap)
+
+            for i in range(len(lines)):
+                for x1,y1,x2,y2 in lines[i]:
+                    cv2.line(image,(x1,y1),(x2,y2),(255,0,10),3)
+
+            cv2.imwrite(os.path.join(str(output_path)+'\lines', "lines" + self.imageNames[idx]), lines)
+
 
 
 if __name__ == '__main__':
 
     print('\n started...\n')
 
-    input_path = r"D:\Output\Test"
-    output_path = r"D:\Output\Test\Output"
-    KasTheKing = Images(input_path,output_path)
+    input_path = r"C:\Users\Assaf\PycharmProjects\untitled\input"
+    output_path = r"C:\Users\Assaf\PycharmProjects\untitled\output"
+    ImageClass = Images()
 
-    KasTheKing.load_images()
-    KasTheKing.resize_images()
+    ImageClass.load_images()
+    ImageClass.resize_images()
+    ImageClass.find_lines()
 
     print('\n finished...\n')
 
@@ -80,29 +93,6 @@ if __name__ == '__main__':
 #
 #
 #
-# def find_lines(self,):
-#     """
-#     TODO:
-#     add docstrings to functions
-#     :return:
-#     """
-#     if not os.path.exists('output'):
-#         os.makedirs('output')
-#
-#     line_img = cv2.imread(input_path)
-#     gray = cv2.cvtColor(line_img,cv2.COLOR_BGR2GRAY)
-#     edges = cv2.Canny(gray,20,250,apertureSize = 3)
-#     cv2.imwrite(output_path + '\IntermediateOutput.jpg' ,edges)
-#
-#     minLineLength = 999999
-#     maxLineGap =  10
-#     lines = cv2.HoughLinesP(edges,1,np.pi/180,150,minLineLength,maxLineGap)
-#
-#     for i in range(len(lines)):
-#         for x1,y1,x2,y2 in lines[i]:
-#             cv2.line(line_img,(x1,y1),(x2,y2),(255,0,10),3)
-#
-#     cv2.imwrite(output_path + '\HoughLineOutput.jpg' ,line_img)
 #
 #
 # def circle_detection():
